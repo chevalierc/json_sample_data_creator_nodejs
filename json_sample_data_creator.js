@@ -1,4 +1,5 @@
 var fs = require( "fs" );
+var _ = require( 'underscore' );
 
 function random( min, max ) {
     return Math.random() * ( max - min ) + min;
@@ -24,11 +25,11 @@ function wiggle( json ) {
     var new_json = {}
     for ( var member in json ) {
         if ( json.hasOwnProperty( member ) ) {
-            new_json[member] = ""
+            new_json[ member ] = ""
             for ( var i = 0; i < json[ member ].length; i++ ) {
                 var char = json[ member ][ i ]
                 var new_char = wiggle_char( char )
-                new_json[member] += new_char
+                new_json[ member ] += new_char
             }
         }
     }
@@ -36,24 +37,40 @@ function wiggle( json ) {
 }
 
 function write( json, file_name ) {
-    var json_string = JSON.stringify(json)
-    fs.writeFile( file_name, json_string, function ( err ) {
-        if ( err ) return console.error( err );
-        console.log(file_name + " created")
-    } )
+    var json_string = JSON.stringify( json )
+    fs.writeFileSync( file_name, json_string )
+    console.log( file_name + " created" )
 }
 
 var run = function () {
     var base_json_dir = process.argv[ 2 ]
     var json_count = process.argv[ 3 ]
+    var user_given_output = process.argv[ 4 ]
+
+    if(!json_count) json_count = 1
+
+    if ( user_given_output ) {
+        var folder_name = user_given_output
+    } else {
+        var folder_name = "./sampleData_" + json_count + "count"
+    }
 
     var base_json = JSON.parse( fs.readFileSync( base_json_dir, 'utf8' ) )
-    if ( !fs.existsSync( "./sample_data" ) ) fs.mkdirSync( "./sample_data" )
 
-    for ( var i = 0; i < json_count; i++ ) {
+    if ( fs.existsSync( folder_name ) ) {
+        var i = 1
+        var og_folder_name = folder_name
+        while ( fs.existsSync( folder_name ) ) {
+            i++
+            folder_name = og_folder_name + "_version" + i
+        }
+    }
+    fs.mkdirSync( folder_name )
+
+    for ( var i = 1; i <= json_count; i++ ) {
         var cur_json = _.clone( base_json )
         var new_json = wiggle( cur_json )
-        write( new_json, "./sample_data/json_" + i + ".json" )
+        write( new_json, folder_name + "/json_" + i + ".json" )
     }
 
 }
